@@ -1,0 +1,19 @@
+#!/bin/bash
+
+CORENLP=/share/tools/stanford-corenlp-full-2013-11-12/stanford-corenlp-3.3.0.jar
+POSTTAGGER=~/Tools/stanford-postagger-full-2014-01-04/stanford-postagger.jar
+MODEL=~/Tools/stanford-postagger-full-2014-01-04/models/english-left3words-distsim.tagger
+
+[ -d raw_wikiquote ] || mkdir raw_wikiquote
+for url in `cat urls`; do
+  curl $url | grep -B 5 'id="toc"' | grep '^<p>' |
+  sed 's/<[^>]*>//g' | sed 's/\[[0-9]\]//g' >raw_wikiquote/${url##*/}
+done
+
+cat raw_wikiquote/* > raw_wikiquote/all
+
+java -classpath $JAR edu.stanford.nlp.process.DocumentPreprocessor raw_wikiquote/all >raw_wikiquote/sentences
+
+java -classpath $CORENLP edu.stanford.nlp.process.DocumentPreprocessor raw_wikiquote/all >raw_wikiquote/sentences
+
+java -mx300m -classpath $POSTTAGGER edu.stanford.nlp.tagger.maxent.MaxentTagger -model $MODEL -textFile raw_wikiquote/sentences > wikiquote
